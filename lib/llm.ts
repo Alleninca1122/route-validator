@@ -1,0 +1,91 @@
+// LLM 调用抽象层
+// 默认走 Anthropic Messages API；未配置 key 时进入演示模式（返回内置示例）
+
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
+export function isLLMConfigured(): boolean {
+  return !!process.env.ANTHROPIC_API_KEY;
+}
+
+export function isDemoMode(): boolean {
+  return !isLLMConfigured() || process.env.DEMO_MODE === 'true';
+}
+
+async function callAnthropic(system: string, user: string): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY!;
+  const model = process.env.LLM_MODEL || 'claude-sonnet-4-20250514';
+  const res = await fetch(ANTHROPIC_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      system,
+      messages: [{ role: 'user', content: user }],
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`LLM API 错误 (${res.status}): ${text.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  const block = data.content?.find((b: { type: string }) => b.type === 'text');
+  return block?.text ?? '';
+}
+
+function extractJSON(text: string): string {
+  // 容错：模型可能在 JSON 前后加少量说明，提取第一个 {...} 块
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) throw new Error('LLM 未返回有效 JSON');
+  return text.slice(start, end + 1);
+}
+
+export async function llmJSON(system: string, user: string): Promise<unknown> {
+  const raw = await callAnthropic(system, user);
+  return JSON.parse(extractJSON(raw));
+}
+
+// ---------- 演示模式内置数据 ----------
+
+export const DEMO_PARSE_RESULT = {
+  target_molecule: '2-(4-硝基苯基)乙醇（C8H9NO3）',
+  steps: [
+    {
+      step: 1,
+      transformation: 'LiAlH₄ 还原甲酯为伯醇',
+      starting_material: '对硝基苯乙酸甲酯',
+      reagents: 'LiAlH₄',
+      conditions: '',
+      product: '2-(4-硝基苯基)乙醇',
+      notes: '原文声称硝基不受影响',
+    },
+  ],
+  total_steps: 1,
+  raw_notes: '演示模式：未配置 ANTHROPIC_API_KEY，显示内置示例',
+};
+
+export const DEMO_EVALUATE_RESULT = {
+  verdict: 'eliminated',
+  eliminated_at_gate: 1,
+  gates: [
+    {
+      gate: 1,
+      name: '化学可能性',
+      passed: false,
+      reason: 'LiAlH₄ 会同时还原芳香硝基，"硝基不动、只还原酯"的声称违反基本反应规律',
+      notes: [],
+    },
+    { gate: 2, name: '安全红线', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
+    { gate: 3, name: '放大与经济性', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
+    { gate: 4, name: '官能团兼容性', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
+    { gate: 5, name: '关键步骤先例', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
+  ],
+  notes_summary: [],
+  next_steps: '重设计方向：改用对硝基选择性的还原体系（如 DIBAL-H 低温控制，或先还原酯再引入硝基），或更换不含硝基的起始物料。',
+  one_line_cause: 'LiAlH₄ 还原硝基，路线在化学上不成立',
+};

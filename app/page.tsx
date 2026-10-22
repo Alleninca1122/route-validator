@@ -61,7 +61,9 @@ export default function Home() {
           <p className="text-slate-500 mt-2 text-sm leading-relaxed">
             五关排除法评审框架
             <br />
-            化学可能性 → 安全红线 → 放大经济性 → 官能团兼容性 → 关键步骤先例
+            化学可能性 → 安全红线 → 官能团兼容性 → 关键步骤先例 → 放大可行性
+            <br />
+            仅判定 / 判定＋推荐，两档交付自选
           </p>
         </div>
 
@@ -121,7 +123,7 @@ export default function Home() {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          评审框架 v2.1 · 五关排除法 · 仅供研发参考
+          评审框架 v2.3 · 五关排除法 · 仅供研发参考
         </p>
       </div>
     </main>

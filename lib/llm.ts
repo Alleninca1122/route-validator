@@ -81,11 +81,62 @@ export const DEMO_EVALUATE_RESULT = {
       notes: [],
     },
     { gate: 2, name: '安全红线', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
-    { gate: 3, name: '放大与经济性', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
-    { gate: 4, name: '官能团兼容性', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
-    { gate: 5, name: '关键步骤先例', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
+    { gate: 3, name: '官能团兼容性', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
+    { gate: 4, name: '关键步骤先例', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
+    { gate: 5, name: '放大可行性', passed: null, reason: '未评审（第 1 关已淘汰）', notes: [] },
   ],
   notes_summary: [],
   next_steps: '重设计方向：改用对硝基选择性的还原体系（如 DIBAL-H 低温控制，或先还原酯再引入硝基），或更换不含硝基的起始物料。',
   one_line_cause: 'LiAlH₄ 还原硝基，路线在化学上不成立',
+  recommendation: null,
+};
+
+/** 演示模式 · B 档（判定＋推荐）：同一判定 ＋ 一个最小补丁式推荐（只动死因那一处） */
+export const DEMO_EVALUATE_RESULT_TIER_B = {
+  ...DEMO_EVALUATE_RESULT,
+  recommendation: {
+    found: true,
+    source: 'patch',
+    summary:
+      '最小补丁：起始物料换成游离羧酸对硝基苯乙酸、还原剂换成 BH₃·THF——硼烷选择性还原羧酸且不碰硝基，死因一处即除，其余不变。',
+    route_description:
+      'Step 1：对硝基苯乙酸用 BH₃·THF 还原羧基为伯醇，硝基保持不变，一步得到 2-(4-硝基苯基)乙醇。',
+    gates: [
+      {
+        gate: 1,
+        name: '化学可能性',
+        passed: true,
+        reason: 'BH₃ 选择性还原羧酸、对芳香硝基惰性，转化成立',
+        notes: [],
+      },
+      {
+        gate: 2,
+        name: '安全红线',
+        passed: true,
+        reason: '无红线物质；BH₃·THF 遇水放氢、易燃，按常规氢化物规程操作可控',
+        notes: ['BH₃·THF 须惰气保护、缓慢淬灭，属实验室可控注意项'],
+      },
+      {
+        gate: 3,
+        name: '官能团兼容性',
+        passed: true,
+        reason: '底物仅羧基与硝基两官能团，硼烷对硝基不反应，无冲突',
+        notes: [],
+      },
+      {
+        gate: 4,
+        name: '关键步骤先例',
+        passed: true,
+        reason: '硼烷还原羧酸为教科书级转化，硝基底物适用性有充分先例',
+        notes: [],
+      },
+      {
+        gate: 5,
+        name: '放大可行性',
+        passed: true,
+        reason: '一步、原料商业可得、无极端条件；硼烷成本只记注意项，不构成死因',
+        notes: ['BH₃·THF 价格高于 LiAlH₄，仅为价格注意项'],
+      },
+    ],
+  },
 };

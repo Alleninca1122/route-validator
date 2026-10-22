@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
-import type { ParsedRoute, EvaluationResult, RouteStep } from '@/lib/types';
+import { RUBRIC_VERSION } from '@/lib/rubric';
+import type { ParsedRoute, EvaluationResult, RouteStep, ServiceTier } from '@/lib/types';
 
 const SUPABASE_ON =
   !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -24,8 +25,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [demo, setDemo] = useState(false);
+  const [tier, setTier] = useState<ServiceTier>('verdict');
   const [history, setHistory] = useState<
-    { id: string; target_molecule: string; evaluation_result: EvaluationResult; created_at: string }[]
+    {
+      id: string;
+      target_molecule: string;
+      evaluation_result: EvaluationResult;
+      service_tier?: ServiceTier;
+      created_at: string;
+    }[]
   >([]);
 
   useEffect(() => {
@@ -78,7 +86,7 @@ export default function Dashboard() {
       const r = await fetch('/api/evaluate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ route_input: text, parsed }),
+        body: JSON.stringify({ route_input: text, parsed, tier }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || '评审失败');
@@ -121,7 +129,7 @@ export default function Dashboard() {
               ⚗
             </span>
             <span className="font-bold">AI 合成路线验证器</span>
-            <span className="text-xs text-slate-400 ml-1">评审框架 v2.1</span>
+            <span className="text-xs text-slate-400 ml-1">评审框架 {RUBRIC_VERSION}</span>
           </div>
           <div className="flex items-center gap-3 text-sm">
             {demo && (
@@ -245,6 +253,39 @@ export default function Dashboard() {
                   ))}
                 </div>
               ))}
+              <div className="mb-4">
+                <label className="text-sm font-medium text-slate-600">交付档位（判定标准相同，只差交付深度）</label>
+                <div className="grid sm:grid-cols-2 gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setTier('verdict')}
+                    className={`text-left rounded-lg border p-3 transition ${
+                      tier === 'verdict'
+                        ? 'border-teal-600 bg-teal-50 ring-1 ring-teal-600'
+                        : 'border-slate-300 hover:border-slate-400'
+                    }`}
+                  >
+                    <span className="font-medium text-sm">A 档 · 仅判定</span>
+                    <span className="block text-xs text-slate-500 mt-1">
+                      只判定路线可不可行：五关判决＋注意项＋一句话重设计方向。
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTier('verdict_plus')}
+                    className={`text-left rounded-lg border p-3 transition ${
+                      tier === 'verdict_plus'
+                        ? 'border-teal-600 bg-teal-50 ring-1 ring-teal-600'
+                        : 'border-slate-300 hover:border-slate-400'
+                    }`}
+                  >
+                    <span className="font-medium text-sm">B 档 · 判定＋推荐</span>
+                    <span className="block text-xs text-slate-500 mt-1">
+                      路线不可行时，若有合适的更好路线则一并推荐（同一标准过五关）；没有合适路线只给方向，不硬凑。
+                    </span>
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={doEvaluate}
                 disabled={loading}
@@ -257,7 +298,7 @@ export default function Dashboard() {
         )}
 
         {stage === 'done' && result && (
-          <ResultCard result={result} onReset={reset} />
+          <ResultCard result={result} onReset={reset} tier={tier} />
         )}
 
         {/* 历史记录 */}
@@ -277,7 +318,10 @@ export default function Dashboard() {
                       {new Date(h.created_at).toLocaleString('zh-CN')}
                     </div>
                   </div>
-                  <VerdictBadge result={h.evaluation_result} />
+                  <div className="flex items-center gap-2">
+                    {h.service_tier && <TierBadge tier={h.service_tier} />}
+                    <VerdictBadge result={h.evaluation_result} />
+                  </div>
                 </button>
               ))}
             </div>
@@ -287,4 +331,4 @@ export default function Dashboard() {
     </div>
   );
 }
-import { ResultCard, VerdictBadge } from '@/components/ResultCard';
+import { ResultCard, VerdictBadge, TierBadge } from '@/components/ResultCard';

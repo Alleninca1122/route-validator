@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createServerSupabase, isSupabaseConfigured } from '@/lib/supabase-server';
 import { ResultCard } from '@/components/ResultCard';
+import type { EvaluationResult, ServiceTier } from '@/lib/types';
 
 export const instant = false;
 
@@ -12,15 +13,15 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
   }
 
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from('evaluations')
-    .select('id, target_molecule, route_input, parsed_steps, evaluation_result, created_at, rubric_version')
-    .eq('id', id)
-    .single();
+  // select('*')：对旧库（无 service_tier 列）与新库都健壮
+  const { data, error } = await supabase.from('evaluations').select('*').eq('id', id).single();
 
   if (error || !data) {
     return <NotFound hint="找不到该评审记录，可能已被删除。" />;
   }
+
+  const tier = (data.service_tier ?? 'verdict') as ServiceTier;
+  const result = data.evaluation_result as EvaluationResult;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -42,9 +43,10 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
           <h1 className="text-xl font-bold">{data.target_molecule}</h1>
           <p className="text-xs text-slate-400 mt-1">
             评审于 {new Date(data.created_at).toLocaleString('zh-CN')} · 评审框架 {data.rubric_version ?? 'v2.1'}
+            {' · '}交付档位：{tier === 'verdict_plus' ? '判定＋推荐' : '仅判定'}
           </p>
         </div>
-        <ResultCard result={data.evaluation_result} />
+        <ResultCard result={result} tier={tier} />
 
         <details className="mt-4 bg-white rounded-xl border border-slate-200 p-6">
           <summary className="font-bold cursor-pointer text-sm">查看原始输入与解析步骤</summary>

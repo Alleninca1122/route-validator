@@ -1,6 +1,7 @@
 # AI 合成路线验证器 · MVP
 
-用五关评审框架（v2.1）验证 AI 设计的药物合成路线是否可行。
+用五关评审框架（v2.3）验证 AI 设计的药物合成路线是否可行。交付分两档，提交时自选：
+A 档「仅判定」只判路线可不可行；B 档「判定＋推荐」在路线不可行且确有合适路线时一并推荐（同一标准过五关）。
 
 ## 快速开始（本地演示模式）
 
@@ -25,6 +26,7 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 启用登录（邮箱 magic link + Google OAuth）与评审历史存储 |
 
 Supabase 建表：在 SQL Editor 执行 `supabase/schema.sql`。
+已建过库的环境另需执行一次 `supabase/migration_002_service_tier.sql`（增加交付档位列 `service_tier`）。
 Google OAuth：Supabase Dashboard → Authentication → Providers 启用 Google，
 Redirect URL 填 `https://<你的域名>/auth/callback`。
 
@@ -37,13 +39,14 @@ Redirect URL 填 `https://<你的域名>/auth/callback`。
 ## API
 
 - `POST /api/parse` `{ text }` → `{ parsed, demo }`
-- `POST /api/evaluate` `{ route_input, parsed }` → `{ result, id, demo, rubric_version }`
+- `POST /api/evaluate` `{ route_input, parsed, tier }` → `{ result, id, demo, rubric_version, tier }`（tier：`verdict` = 仅判定，`verdict_plus` = 判定＋推荐，默认 `verdict`）
 - `GET /api/history` → 当前用户的评审历史（需登录）
 
 ## 评审框架
 
-系统提示词见 `lib/rubric.ts`，源自 `~/workspace/your_files/route-validator-rubric-v1.md`（v2.1）。
-五关顺序 fail-fast：第 1 关淘汰后，后续关卡标记为未评审。
+系统提示词见 `lib/rubric.ts`，源自 `~/workspace/your_files/route-validator-rubric-v1.md`（v2.3）。
+五关顺序（fail-fast）：化学可能性 → 安全红线 → 官能团兼容性 → 关键步骤先例 → 放大可行性。
+三类结论：❌ 淘汰（死于第 1–4 关）/ 🔬 实验室可行（死于第 5 关，不算淘汰）/ ✅ 候选（五关全过）。
 
 ## 技术栈
 

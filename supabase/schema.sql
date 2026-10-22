@@ -8,7 +8,8 @@ create table if not exists evaluations (
   route_input text not null default '',
   parsed_steps jsonb not null,
   evaluation_result jsonb not null,
-  rubric_version text not null default 'v2.1',
+  rubric_version text not null default 'v2.3',
+  service_tier text not null default 'verdict' check (service_tier in ('verdict', 'verdict_plus')),
   created_at timestamptz not null default now()
 );
 

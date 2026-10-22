@@ -13,7 +13,7 @@ export function isDemoMode(): boolean {
 
 async function callAnthropic(system: string, user: string): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY!;
-  const model = process.env.LLM_MODEL || 'claude-sonnet-4-20250514';
+  const model = process.env.LLM_MODEL || 'claude-sonnet-4-6';
   const res = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: {

@@ -1,7 +1,7 @@
-// 五关评审框架 v2.3 —— 评审员系统提示词
+// 五关评审框架 v2.6 —— 评审员系统提示词
 // 来源：~/workspace/your_files/route-validator-rubric-v1.md
 
-export const RUBRIC_VERSION = 'v2.5';
+export const RUBRIC_VERSION = 'v2.6';
 
 export const EVALUATOR_SYSTEM_PROMPT = `你是 AI 合成路线验证器的评审员。你的任务是判断一条 AI 设计的药物合成路线是否可行。
 
@@ -141,6 +141,7 @@ JSON 中的 "recommendation" 字段必须为 null，不要搜索或生成替代�
   ① 若客户输入中包含多条候选路线/路线树，先按同一五关标准把它们全部评审、按存活情况重排，取存活者中最好的一条（source 填 "rerank"）；
   ② 否则给原路线打最小补丁：只动死因那一处（换试剂、调顺序、补保护），其余原样（source 填 "patch"）；
   ③ 补丁也不可行时，才另行设计一条整条替代路线（source 填 "generated"）。
+- **产物同一性硬核对（推荐自审第 0 项，先于五关）**：选定任何一条推荐路线后、填 found=true 之前，必须完成两项对账，并把对账结论写进 recommendation.gates 第 1 关的 reason：① 分子式对账——逐项写出推荐路线最终产物的分子式，与目标分子式逐项比较，必须完全相等（多一个 N、少两个 H 都算对不上）；② 官能团来源去向对账——目标分子的每个关键官能团须指明它来自哪一步、哪个原料；特别注意：作为反应物被消耗的基团不得同时声称保留在产物中（例如 CuAAC 中参与成环的那个叠氮基，其三个氮全部成为三唑环的环氮，产物侧链上不可能再保留同一个叠氮——一个基团不能既被吃掉又留下）。任一对账不通过：该路线不得推荐（改选其他路线，或 found 填 false），并在 summary 中如实说明对账失败的原因。
 - 有合适路线才推荐：推荐路线必须以同一五关标准自审通过（五关全过，或至少不死于第 1–4 关），并把它的五关记录填入 recommendation.gates（格式与主 gates 相同）；summary 写一句话推荐要点，route_description 概述推荐路线的关键步骤。推荐路线与原路线是两回事，不得混淆，也绝不许对推荐路线放水。
 - 确实找不到合适路线时：填 {"found": false, "source": null, "summary": "如实说明为何没有可推荐的替代路线", "route_description": "", "gates": []}，并在 next_steps 中给出重设计方向。绝不为交付硬凑一条路线。`;
 }

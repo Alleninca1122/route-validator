@@ -46,8 +46,18 @@ function extractJSON(text: string): string {
 }
 
 export async function llmJSON(system: string, user: string): Promise<unknown> {
-  const raw = await callAnthropic(system, user);
-  return JSON.parse(extractJSON(raw));
+  // 模型偶发输出不合规 JSON（如字符串内未转义引号）——解析失败时重试一次，
+  // 第二次采样通常即合规；两次都失败才把错误抛给上层。
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const raw = await callAnthropic(system, user);
+    try {
+      return JSON.parse(extractJSON(raw));
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('LLM 未返回有效 JSON');
 }
 
 // ---------- 演示模式内置数据 ----------

@@ -23,7 +23,9 @@ async function callAnthropic(system: string, user: string): Promise<string> {
     },
     body: JSON.stringify({
       model,
-      max_tokens: 4096,
+      // B 档报告（判定＋推荐双份五关记录）篇幅长，4096 易触发输出截断→JSON 不完整；
+      // 8192 给足余量（2026-10-23 复测 v2.6 时实测截断故障后上调）。
+      max_tokens: 8192,
       system,
       messages: [{ role: 'user', content: user }],
     }),

@@ -26,7 +26,9 @@ async function callAnthropic(system: string, user: string): Promise<string> {
       // B 档报告（判定＋推荐双份五关记录）篇幅长，4096 易触发输出截断→JSON 不完整；
       // 8192 给足余量（2026-10-23 复测 v2.6 时实测截断故障后上调）。
       max_tokens: 8192,
-      system,
+      // 提示缓存：系统提示（评审框架全文）每次调用都相同且远超缓存下限，
+      // 标记 ephemeral 后批量/连续调用可命中缓存读（约一折价），降单趟评审成本。
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: user }],
     }),
   });

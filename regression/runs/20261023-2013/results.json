@@ -1,0 +1,71 @@
+[
+ {
+  "id": "r1-03",
+  "name": "2-(4-硝基苯基)乙醇",
+  "tier": "verdict",
+  "rubric_version": "v2.6",
+  "raw": {
+   "result": {
+    "verdict": "eliminated",
+    "eliminated_at_gate": 1,
+    "gates": [
+     {
+      "gate": 1,
+      "name": "化学可能性",
+      "passed": false,
+      "reason": "Step 1 声称 LiAlH₄ 将对硝基苯乙酸甲酯选择性还原为伯醇（酯→醇），同时保留芳香硝基——此转化违反 LiAlH₄ 的基本反应规律：LiAlH₄ 是强非选择性氢化物还原剂，对芳香硝基的还原电位远高于酯基，实际上会将硝基还原为胺基（ArNO₂→ArNH₂），无法在得到目标醇的同时保留硝基，导致产物应为 2-(4-氨基苯基)乙醇而非 2-(4-硝基苯基)乙醇，原子/官能团转化自相矛盾。",
+      "notes": [
+       "若目标确为保留硝基、仅还原酯基，须改用化学选择性更高的还原剂，如 DIBAL-H（低温）、NaBH₄/CaCl₂ 或 Red-Al 等，或采用先还原酯再氧化路线"
+      ]
+     },
+     {
+      "gate": 2,
+      "name": "安全红线",
+      "passed": null,
+      "reason": null,
+      "notes": []
+     },
+     {
+      "gate": 3,
+      "name": "官能团兼容性",
+      "passed": null,
+      "reason": null,
+      "notes": []
+     },
+     {
+      "gate": 4,
+      "name": "关键步骤先例",
+      "passed": null,
+      "reason": null,
+      "notes": []
+     },
+     {
+      "gate": 5,
+      "name": "放大可行性",
+      "passed": null,
+      "reason": null,
+      "notes": []
+     }
+    ],
+    "notes_summary": [
+     "LiAlH₄ 不可选择性保留芳香硝基：其还原力足以将 ArNO₂ 还原至 ArNH₂，Step 1 产物将为 2-(4-氨基苯基)乙醇，而非目标硝基醇",
+     "若需单步将酯还原为醇同时保留硝基，须选用化学选择性氢化物还原剂（如 DIBAL-H、NaBH₄/MeOH 低温）或底物控制策略"
+    ],
+    "next_steps": "重设计方向：以对硝基苯乙酸甲酯为起始物，改用对硝基官能团惰性的选择性酯还原试剂（如 NaBH₄ 在 MeOH/THF 中低温还原酯，或 DIBAL-H -78℃），确保硝基不被触及；或改换路线，先用对硝基苯乙酸直接 BH₃·THF 还原羧酸为醇（BH₃ 对硝基选择性优于 LiAlH₄），再酌情调整保护基策略。",
+    "one_line_cause": "LiAlH₄ 在还原酯基的同时必然还原芳香硝基，无法得到目标硝基醇，转化违反选择性还原基本规律。",
+    "recommendation": null
+   },
+   "id": null,
+   "demo": false,
+   "rubric_version": "v2.6",
+   "tier": "verdict"
+  },
+  "got": {
+   "verdict": "eliminated",
+   "eliminated_at_gate": 1
+  },
+  "one_line_cause": "LiAlH₄ 在还原酯基的同时必然还原芳香硝基，无法得到目标硝基醇，转化违反选择性还原基本规律。",
+  "match": true,
+  "seconds": 41.5
+ }
+]

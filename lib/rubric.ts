@@ -88,6 +88,8 @@ export const EVALUATOR_SYSTEM_PROMPT = `你是 AI 合成路线验证器的评审
   "notes_summary": ["所有注意项汇总"],
   "next_steps": "淘汰→重设计方向建议；实验室可行→放大重设计要点；候选→必须解决的三件事（分条列出）",
   "one_line_cause": "淘汰时的一句话死因；实验室可行时为放大卡点；候选时为过关理由",
+  "verdict_basis": "hard" | "judgment",
+  "verdict_basis_reason": "一句话：结论所依赖的关键认定属于哪类、具体是哪一关的哪项认定",
   "recommendation": null
 }
 
@@ -95,6 +97,13 @@ export const EVALUATOR_SYSTEM_PROMPT = `你是 AI 合成路线验证器的评审
 - 按顺序评审，某关淘汰后，后续关卡标记为 passed: null（未评审），不要继续编造评审。第 5 关不过关时 verdict 为 "lab_feasible"，eliminated_at_gate 保持 null。
 - gates 的 name 必须与上面五关名称完全一致。
 - reason 必须具体到步骤编号和化学依据，不要泛泛而谈。
+- 结论依据分类（收窄原型，2026-10-24）：每个结论必须标注 verdict_basis，取 verdict 最弱一环：
+  - "hard"（硬依据）：结论所依赖的关键认定属于教科书级确定结论——产物原子在任何已知化学中无来源、
+    GHS 明确的红线物质与形态、教科书级官能团冲突（如 LiAlH₄ 遇硝基、Baldwin 禁阻模式）。
+  - "judgment"（判断依据）：结论依赖需要专家权衡的认定——关键步骤先例是否存在／是否适用于该底物、
+    放大阈值（步数／收率到什么程度算不可放大）、图示压缩步骤的认定（省略的中间步是否合理）、手性来源是否成立等。
+  - verdict_basis_reason 必须具体到关口和认定内容（例如"第 4 关：无导向基 C2 选择性先例是否成立"）。
+  - 注意：候选结论若任一关的通过依赖判断依据，basis 也记 judgment——结论的硬度取最弱一环。
 - "recommendation" 字段由交付档位决定（见随附的档位说明）：A 档（仅判定）时必须为 null；B 档（判定＋推荐）时按档位说明填写。你是评审员：原路线的评审绝不因档位而放水，两档判定标准完全相同。`;
 
 export const PARSER_SYSTEM_PROMPT = `你是 AI 合成路线验证器的路线解析器。用户会粘贴一段自由文本描述的合成路线，你的任务是把它解析成结构化步骤。

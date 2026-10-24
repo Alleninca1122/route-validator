@@ -48,8 +48,8 @@ export interface Recommendation {
 }
 
 export interface EvaluationResult {
-  /** candidate = 五关全过；lab_feasible = 过前四关、死于第 5 关（不算淘汰）；eliminated = 死于第 1–4 关 */
-  verdict: 'candidate' | 'lab_feasible' | 'eliminated';
+  /** candidate = 五关全过；lab_feasible = 过前四关、死于第 5 关（不算淘汰）；eliminated = 死于第 1–4 关；needs_review = 收窄原型：结论依赖判断题，转人工复核（不作淘汰／候选判定） */
+  verdict: 'candidate' | 'lab_feasible' | 'eliminated' | 'needs_review';
   /** 仅淘汰时有值（1–4） */
   eliminated_at_gate: number | null;
   gates: GateResult[];
@@ -58,6 +58,14 @@ export interface EvaluationResult {
   one_line_cause: string;
   /** B 档才有；A 档为 null。旧记录可能缺失 */
   recommendation?: Recommendation | null;
+  /** 收窄原型：结论依据分类（hard = 教科书级确定结论；judgment = 依赖专家权衡的认定）。旧记录可能缺失 */
+  verdict_basis?: 'hard' | 'judgment';
+  /** 结论依据的具体认定内容（一句话） */
+  verdict_basis_reason?: string;
+  /** 转复核前的原结论（仅 needs_review 时有值，供分析与追溯） */
+  pre_review_verdict?: 'candidate' | 'lab_feasible' | 'eliminated';
+  /** 转复核前的原死关（仅原结论为 eliminated 时有值） */
+  pre_review_gate?: number | null;
 }
 
 export interface EvaluationRecord {

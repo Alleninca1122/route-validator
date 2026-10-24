@@ -67,6 +67,35 @@ export async function POST(req: NextRequest) {
       for (const c of counts.values()) if (!best || c.n > best.n) best = c;
       result = best!.sample;
       consensus = { samples: samples.length, agreement: best!.n };
+      // 收窄原型（2026-10-24，Allen 批准试跑）：判断依据的结论不硬判，转人工复核。
+      // 依据取样本多数（缺失按 judgment 计，平票按 judgment 计——不确定时不硬判）。
+      // 注意：lab_feasible 本质死于第 5 关（放大阈值，属判断），故按本规则多半转复核——
+      // 该后果已在原型验证中列为观察项，是否给 lab_feasible 开口子由后续裁决定。
+      const basisCounts = new Map<string, number>();
+      for (const s of samples) {
+        const b = s.verdict_basis === 'hard' ? 'hard' : 'judgment';
+        basisCounts.set(b, (basisCounts.get(b) ?? 0) + 1);
+      }
+      const hardN = basisCounts.get('hard') ?? 0;
+      const judgmentN = basisCounts.get('judgment') ?? 0;
+      const majorityBasis = hardN > judgmentN ? 'hard' : 'judgment';
+      const basisReason =
+        samples.find((s) => (s.verdict_basis === 'hard' ? 'hard' : 'judgment') === majorityBasis)
+          ?.verdict_basis_reason ?? '';
+      result.verdict_basis = majorityBasis;
+      result.verdict_basis_reason = basisReason;
+      if (majorityBasis === 'judgment') {
+        result.pre_review_verdict = result.verdict;
+        result.pre_review_gate = result.eliminated_at_gate;
+        result.verdict = 'needs_review';
+        result.eliminated_at_gate = null;
+        // 未作判定的路线不给推荐（推荐以判定为前提；B 档同理）。
+        result.recommendation = null;
+        result.notes_summary = [
+          ...result.notes_summary,
+          '本结论依赖判断题（见 verdict_basis_reason），转人工复核，不作淘汰／候选判定。',
+        ];
+      }
       // 档位兜底：A 档强制无推荐；B 档缺字段时补 null
       if (tier === 'verdict') result.recommendation = null;
       else if (result.recommendation === undefined) result.recommendation = null;

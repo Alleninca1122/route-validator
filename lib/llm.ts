@@ -11,7 +11,7 @@ export function isDemoMode(): boolean {
   return !isLLMConfigured() || process.env.DEMO_MODE === 'true';
 }
 
-async function callAnthropic(system: string, user: string): Promise<string> {
+async function callAnthropic(system: string, user: string, temperature = 0): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY!;
   const model = process.env.LLM_MODEL || 'claude-sonnet-4-6';
   const res = await fetch(ANTHROPIC_URL, {
@@ -29,9 +29,9 @@ async function callAnthropic(system: string, user: string): Promise<string> {
       // 提示缓存：系统提示（评审框架全文）每次调用都相同且远超缓存下限，
       // 标记 ephemeral 后批量/连续调用可命中缓存读（约一折价），降单趟评审成本。
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
-      // 采样随机度固定为 0：评审员调用要可复现——同一条路线每次判出同一结论，
+      // 采样随机度默认 0：评审员调用要可复现——同一条路线每次判出同一结论，
       // 考场重跑的差异才反映框架改动而非抽签（2026-10-24 Allen 定；不改评审标准，不升框架版本）。
-      temperature: 0,
+      temperature,
       messages: [{ role: 'user', content: user }],
     }),
   });
@@ -53,11 +53,15 @@ function extractJSON(text: string): string {
 }
 
 export async function llmJSON(system: string, user: string): Promise<unknown> {
-  // 模型偶发输出不合规 JSON（如字符串内未转义引号）——解析失败时重试一次，
-  // 第二次采样通常即合规；两次都失败才把错误抛给上层。
+  // 模型偶发输出不合规 JSON（如字符串内未转义引号）。首选采样随机度 0（可复现）；
+  // 但 0 会把一次 malformed 输出"粘住"——贪心路径每次走同一条破路，重试也一样破
+  // （2026-10-24 r2-05 实测：温度 0 下连续三次 500，错误均为 JSON 解析失败）。
+  // 因此重试必须逐级扰动采样随机度（0 → 0.3 → 0.7），用变化打破粘住的破路；
+  // 首选成功时结论仍是 0 的结论，扰动只用于救解析失败，不参与正常评审。
+  const ladder = [0, 0.3, 0.7];
   let lastErr: unknown;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const raw = await callAnthropic(system, user);
+  for (const temperature of ladder) {
+    const raw = await callAnthropic(system, user, temperature);
     try {
       return JSON.parse(extractJSON(raw));
     } catch (e) {

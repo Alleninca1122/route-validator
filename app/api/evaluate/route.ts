@@ -85,7 +85,9 @@ export async function POST(req: NextRequest) {
       result.verdict_basis = majorityBasis;
       result.verdict_basis_reason = basisReason;
       if (majorityBasis === 'judgment') {
-        result.pre_review_verdict = result.verdict;
+        // 此处 verdict 恒为三值之一（模型输出的 verdict 枚举不含 needs_review，
+        // needs_review 只由本段设置）；cast 仅为满足 widen 后的静态类型。
+        result.pre_review_verdict = result.verdict as 'candidate' | 'lab_feasible' | 'eliminated';
         result.pre_review_gate = result.eliminated_at_gate;
         result.verdict = 'needs_review';
         result.eliminated_at_gate = null;

@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+// 评审单次调用常需 50–90 秒（长报告＋温度 0 下输出更长）；平台默认 60 秒会杀掉函数
+// 表现为 500（r2-05 在温度 0 验证中复现）。放宽到 300 秒，计划若封顶则另行处理。
+export const maxDuration = 300;
 import { llmJSON, isDemoMode, DEMO_EVALUATE_RESULT, DEMO_EVALUATE_RESULT_TIER_B } from '@/lib/llm';
 import { EVALUATOR_SYSTEM_PROMPT, RUBRIC_VERSION, tierInstruction } from '@/lib/rubric';
 import { createServerSupabase, isSupabaseConfigured } from '@/lib/supabase-server';

@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+// 与 evaluate 同理：解析调用也可能耗时，放宽函数时限防平台 60 秒杀掉。
+export const maxDuration = 300;
 import { llmJSON, isDemoMode, DEMO_PARSE_RESULT } from '@/lib/llm';
 import { PARSER_SYSTEM_PROMPT } from '@/lib/rubric';
 import type { ParsedRoute } from '@/lib/types';

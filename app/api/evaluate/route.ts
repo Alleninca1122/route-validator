@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
 
     let result: EvaluationResult;
     let demo = false;
+    // 多数决共识（仅真实评审）：同一评审跑 3 个并行样本，取（结论，死关）出现最多的那份完整结果。
+    let consensus: { samples: number; agreement: number } | null = null;
 
     if (isDemoMode()) {
       result = (tier === 'verdict_plus'
@@ -35,10 +37,36 @@ export async function POST(req: NextRequest) {
             `Step ${s.step}：${s.transformation}。起始物：${s.starting_material}；试剂：${s.reagents}；条件：${s.conditions || '（原文未写）'}；产物：${s.product}${s.notes ? `；备注：${s.notes}` : ''}`,
         )
         .join('\n');
-      result = (await llmJSON(
-        EVALUATOR_SYSTEM_PROMPT,
-        `目标分子：${parsed.target_molecule}\n共 ${parsed.total_steps} 步：\n${stepsText}\n\n${parsed.raw_notes ? `补充信息：${parsed.raw_notes}\n\n` : ''}请按五关评审框架逐关评审，严格按指定 JSON 格式输出。\n\n${tierInstruction(tier)}`,
-      )) as EvaluationResult;
+      const userPrompt = `目标分子：${parsed.target_molecule}\n共 ${parsed.total_steps} 步：\n${stepsText}\n\n${parsed.raw_notes ? `补充信息：${parsed.raw_notes}\n\n` : ''}请按五关评审框架逐关评审，严格按指定 JSON 格式输出。\n\n${tierInstruction(tier)}`;
+      // 多数决（工程决定，2026-10-24）：单次采样的结论翻转率对核心输出不可接受
+      // （两遍验证仅 8/12 一致），故同一评审并行跑 3 个样本投票；温度 0 保持，
+      // 首选仍是温度 0 的结论，投票只解决采样方差。样本失败时用成功样本投票，
+      // 全部失败才抛错；B 档的推荐取自中选样本，不另投票。
+      const settled = await Promise.allSettled([
+        llmJSON(EVALUATOR_SYSTEM_PROMPT, userPrompt),
+        llmJSON(EVALUATOR_SYSTEM_PROMPT, userPrompt),
+        llmJSON(EVALUATOR_SYSTEM_PROMPT, userPrompt),
+      ]);
+      const samples = settled
+        .filter((s): s is PromiseFulfilledResult<unknown> => s.status === 'fulfilled')
+        .map((s) => s.value as EvaluationResult);
+      if (samples.length === 0) {
+        const reason = settled.find((s) => s.status === 'rejected') as
+          | PromiseRejectedResult
+          | undefined;
+        throw reason?.reason ?? new Error('评审失败');
+      }
+      const counts = new Map<string, { n: number; sample: EvaluationResult }>();
+      for (const s of samples) {
+        const key = `${s.verdict}::${s.eliminated_at_gate ?? ''}`;
+        const cur = counts.get(key);
+        if (cur) cur.n += 1;
+        else counts.set(key, { n: 1, sample: s });
+      }
+      let best: { n: number; sample: EvaluationResult } | undefined;
+      for (const c of counts.values()) if (!best || c.n > best.n) best = c;
+      result = best!.sample;
+      consensus = { samples: samples.length, agreement: best!.n };
       // 档位兜底：A 档强制无推荐；B 档缺字段时补 null
       if (tier === 'verdict') result.recommendation = null;
       else if (result.recommendation === undefined) result.recommendation = null;
@@ -77,7 +105,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ result, id, demo, rubric_version: RUBRIC_VERSION, tier });
+    return NextResponse.json({ result, id, demo, rubric_version: RUBRIC_VERSION, tier, consensus });
   } catch (e) {
     console.error('evaluate error:', e);
     return NextResponse.json(

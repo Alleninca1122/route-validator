@@ -29,6 +29,9 @@ async function callAnthropic(system: string, user: string): Promise<string> {
       // 提示缓存：系统提示（评审框架全文）每次调用都相同且远超缓存下限，
       // 标记 ephemeral 后批量/连续调用可命中缓存读（约一折价），降单趟评审成本。
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+      // 采样随机度固定为 0：评审员调用要可复现——同一条路线每次判出同一结论，
+      // 考场重跑的差异才反映框架改动而非抽签（2026-10-24 Allen 定；不改评审标准，不升框架版本）。
+      temperature: 0,
       messages: [{ role: 'user', content: user }],
     }),
   });
